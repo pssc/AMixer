@@ -2,7 +2,7 @@
 
 # Meta
 APPLET_NAME
-	EN	AMixer
+	EN	ALSA Mixer
 
 # Applet
 
