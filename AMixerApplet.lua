@@ -385,7 +385,7 @@ function updateStartMenu(self,menu)
 
 	local cards = self:_parseCards()
     self.current_card = self.current_card or 1
-    len = table.getn(cards)
+    len = #cards
 
     local incrementCard = function()
         if self.current_card < len then
@@ -508,7 +508,7 @@ end
 
 
 function pack(...)
-    return arg
+    return {...}
 end
 
 function string:split(sSeparator, nMax, bRegexp)
@@ -568,7 +568,7 @@ function _parseAmixerOutput(self, file)
 			return
 		end
 		local r =  pack(string.match(tmp, regexp))
-        len = table.getn(r)
+        len = #r
 		if opt and len == 0 then
 			last = tmp
 		else
