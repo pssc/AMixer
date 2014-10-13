@@ -325,20 +325,6 @@ function PVolumeHandler:processEvent()
 				     self:_setVolume(value)
 			     end)
 
-	self.slider:addListener(EVENT_KEY_PRESS,
-				function(event)
-					local code = event:getKeycode()
-					if code == KEY_VOLUME_UP then
-						self:_setVolume(self.slider:getValue() + 1)
-						return EVENT_CONSUME
-					elseif code == KEY_VOLUME_DOWN then
-						self:_setVolume(self.slider:getValue() - 1)
-						return EVENT_CONSUME
-					end
-					return EVENT_UNUSED
-				end)
-
-
 	window:addWidget(Group("slider_group", {
 				     min = Icon("button_volume_min"),
 				     slider = self.slider,
