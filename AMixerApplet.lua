@@ -325,20 +325,6 @@ function PVolumeHandler:processEvent()
 				     self:_setVolume(value)
 			     end)
 
-	self.slider:addListener(EVENT_KEY_PRESS,
-				function(event)
-					local code = event:getKeycode()
-					if code == KEY_VOLUME_UP then
-						self:_setVolume(self.slider:getValue() + 1)
-						return EVENT_CONSUME
-					elseif code == KEY_VOLUME_DOWN then
-						self:_setVolume(self.slider:getValue() - 1)
-						return EVENT_CONSUME
-					end
-					return EVENT_UNUSED
-				end)
-
-
 	window:addWidget(Group("slider_group", {
 				     min = Icon("button_volume_min"),
 				     slider = self.slider,
@@ -385,7 +371,7 @@ function updateStartMenu(self,menu)
 
 	local cards = self:_parseCards()
     self.current_card = self.current_card or 1
-    len = table.getn(cards)
+    len = #cards
 
     local incrementCard = function()
         if self.current_card < len then
@@ -508,7 +494,7 @@ end
 
 
 function pack(...)
-    return arg
+    return {...}
 end
 
 function string:split(sSeparator, nMax, bRegexp)
@@ -568,7 +554,7 @@ function _parseAmixerOutput(self, file)
 			return
 		end
 		local r =  pack(string.match(tmp, regexp))
-        len = table.getn(r)
+        len = #r
 		if opt and len == 0 then
 			last = tmp
 		else

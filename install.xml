@@ -1,0 +1,24 @@
+<?xml version='1.0' standalone='yes'?>
+<extension>
+  <id>AB93C800-59D2-11E3-949A-0800200C9A66</id>
+
+  <name>APPLET_NAME</name>
+  <playerMenu>settingsAudio</playerMenu>
+
+  <creator>Cowboy Coders</creator>
+  <defaultState>enabled</defaultState>
+  <version>0.2</version>
+  <description>DESCRIPTION</description>
+  <email>ralph.irving@gmail.com</email>
+
+  <homepageURL>http://ralph_irving.users.sourceforge.net/amixer</homepageURL>
+
+  <type>2</type><!-- type=extension -->
+
+  <targetApplication>
+    <id>SqueezeCenter</id>
+    <minVersion>7.6</minVersion>
+    <maxVersion>*</maxVersion>
+  </targetApplication>
+
+</extension>

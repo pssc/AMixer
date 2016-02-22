@@ -2,9 +2,7 @@
 
 # Meta
 APPLET_NAME
-	EN	Hardware (A)Mixer
-
-# Applet
+	EN	Mixer (ALSA)
 
 SELECT_CONTROL
 	EN	Select a control
@@ -14,6 +12,9 @@ HELP_START
 
 CAPABILITIES
 	EN	Select an option
+
+DESCRIPTION
+	EN	Simple GUI similiar to alsamixer for jive.
 
 VOLUME_DESCRIPTION
 	EN	Volume

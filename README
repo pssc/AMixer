@@ -1,5 +1,13 @@
-Squeezplay applet to control sound devices (analogous to alsamixer)
+Jivelite applet to control ALSA sound devices (analogous to alsamixer)
 
-Install: just copy to squeezplay/jive/share/applets directory
+Install: Add the repository URL 
 
-Note: directory should be named AMixer, not Amixer
+http://ralph_irving.users.sourceforge.net/repo.xml
+
+to the Settings->Plugin->Additional Repositories at the bottom.
+
+On the jive device to go Settings->Advanced->Applet Installer and install ALSA Mixer.
+
+Restart jivelite.
+
+Alsa Mixer can then be found in Settings->Audio Settings.

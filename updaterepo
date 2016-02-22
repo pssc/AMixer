@@ -1,0 +1,18 @@
+#!/bin/bash
+
+APPKG=AMixer-0.2.zip
+
+rm $APPKG
+
+zip -9r $APPKG AMixerApplet.lua  AMixerMeta.lua strings.txt install.xml 
+
+SHA=`shasum $APPKG | awk '{printf "%s", $1}'`
+sed -i -e "/<applet name=\"AMixer\".*>/,/<\/applet>/ s|<sha>[0-9a-z]\{1,\}</sha>|<sha>$SHA</sha>|g" repo.xml
+
+cat repo.xml
+
+scp -p repo.xml ralph_irving@web.sourceforge.net:/home/user-web/r/ra/ralph_irving/htdocs
+
+scp -p AMixer-0.2.zip ralph_irving@web.sourceforge.net:/home/user-web/r/ra/ralph_irving/htdocs/amixer
+
+# http://ralph_irving.users.sourceforge.net/repo.xml

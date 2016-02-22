@@ -4,6 +4,7 @@ AMixer - interface for amixer
 
 (c) 2012, Will Szumski will@cowboycoders.org
 (c) 2012, Adrian Smith, triode1@btinternet.com (several functions used from his EnhancedDigitalOuput)
+(c) 2016, Phillip Camp, Add Custom Mixer
 
 --]]
 
@@ -29,6 +30,7 @@ end
 
 function defaultSettings(self)
 	return {
+		custom='equal',
 	}
 end
 
@@ -43,11 +45,5 @@ function registerApplet(meta)
 		)
 	)
 
-    --local applet = appletManager:loadApplet('AMixer')
-    --applet:startMenu(nil)
-
-
 end
-
-
 
