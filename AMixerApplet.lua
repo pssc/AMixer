@@ -537,14 +537,14 @@ function string:split(sSeparator, nMax, bRegexp)
 end
 
 
-function _parseAmixerControls(self, card_no)
-	local card_no = card_no or 0
+function _parseAmixerControls(self, device)
+	local device = device or "hw:0"
 	local t = nil
 	
-	local file = io.popen("amixer -c " .. card_no)
+	local file = io.popen("amixer -D " .. device)
 	
 	if file == nil then
-		log:error("the command, amixer -c " .. card_no .. ", failed")
+		log:error("the command, amixer -D " .. device .. ", failed")
 		return t
 	end
 
@@ -709,14 +709,20 @@ function _parseCards(self)
 	-- read and parse entries
 	for line in cards:lines() do
 		local num, id, desc = string.match(line, "(%d+)%s+%[(.-)%s+%]:%s+(.*)")
-        if num then
-            t[#t +1] = self:_parseAmixerControls(num)
-            t[#t]['id'] = id
-            t[#t]['desc'] = desc
+		if num then
+			t[#t +1] = self:_parseAmixerControls("hw:"..id)
+			t[#t]['id'] = id
+			t[#t]['desc'] = desc
+		end
         end
-	end
-
 	cards:close()
+
+	-- FIXME iterate over string split and add
+	if settings['custom'] then
+		t[#t+1] = self:_parseAmixerControls(settings['custom'])
+		t[#t]['id'] = settings['custom']
+		t[#t]['desc'] = 'custom'
+	end
 
 	return t
 end
