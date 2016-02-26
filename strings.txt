@@ -36,3 +36,6 @@ UNMUTE
 
 CANCEL
 	EN	Cancel
+
+SETTING_CUSTOM
+	EN	Custom Mixer

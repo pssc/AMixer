@@ -2,15 +2,16 @@
 
 AMixer - interface for amixer
 
-(c) 2012, Will Szumski will@cowboycoders.org
+(c) 2012, Will Szumski, will@cowboycoders.org
 (c) 2012, Adrian Smith, triode1@btinternet.com (several functions used from his EnhancedDigitalOuput)
+(c) 2016, Phillip Camp, pssc github.com
 
 --]]
 
 local oo               = require("loop.simple")
 local io               = require("io")
 local os               = require("os")
-local Applet           = require("jive.Applet")
+local AppletUI         = require("jive.AppletUI")
 local System           = require("jive.System")
 local Framework        = require("jive.ui.Framework")
 local SimpleMenu       = require("jive.ui.SimpleMenu")
@@ -37,14 +38,13 @@ local STOP_SERVER_TIMEOUT = 10
 local string, ipairs, tonumber, tostring, require, type, table, unpack, assert, math, pairs, tonumber = string, ipairs, tonumber, tostring, require, type, table, unpack, assert, math, pairs, tonumber
 
 module(..., Framework.constants)
-oo.class(_M, Applet)
+oo.class(_M, AppletUI)
 
 applet = nil
 
 function round(num, idp)
-    local mult = 10^(idp or 0)
-    if num >= 0 then return math.floor(num * mult + 0.5) / mult
-    else return math.ceil(num * mult - 0.5) / mult end
+	local mult = 10^(idp or 0)
+	return num >= 0 and (math.floor(num * mult + 0.5) / mult) or (math.ceil(num * mult - 0.5) / mult)
 end
 
 local AlsaCapability = oo.class()
@@ -54,33 +54,31 @@ local AlsaCapability = oo.class()
 --@param control table --  see_parseAmixerControls
 --@param desc descibres what capability does, if nil overide getDescription()
 function AlsaCapability:__init(args)
-  
-  local obj = oo.rawnew(self)
-  log:debug('card: ', args.card)
-  obj.card = args.card
-  obj.control = args.control
-  obj.desc = args.desc
+	local obj = oo.rawnew(self)
+	log:debug('card: ', args.card)
+	obj.card = args.card
+	obj.control = args.control
+	obj.desc = args.desc
 
-  return obj
-
+	return obj
 end
 
 function AlsaCapability:getCard()
-    return self.card -1
+	return self.card
 end
 
 -- combines name and index
 function AlsaCapability:getControlIdentifier()
-    return '\'' .. self.control.name .. '\'' .. ',' .. self.control.index
+	return '\'' .. self.control.name .. '\'' .. ',' .. self.control.index
 end
 
 function AlsaCapability:getStreamModifiers()
-    if self.playblack then
-        return 'playback'
-    elseif self.capture then
-        return 'capture'
-    end
-    return nil
+	if self.playblack then
+		return 'playback'
+	elseif self.capture then
+		return 'capture'
+	end
+	return nil
 end
 
 -- overide and return a string containing suitable value
@@ -90,63 +88,62 @@ end
 --end
 
 function AlsaCapability:set(value)
-    cmd = 'amixer -c ' .. self:getCard() .. ' set ' .. self:getControlIdentifier() .. ' ' .. (self:getStreamModifiers() and self:getStreamModifiers() .. ' ' or '')  .. value
-    log:debug('executing cmd: ', cmd)
-    os.execute(cmd .. ' > /dev/null')
+	local cmd = 'amixer -D ' .. self:getCard() .. ' set ' .. self:getControlIdentifier() .. ' ' .. (self:getStreamModifiers() and self:getStreamModifiers() .. ' ' or '')  .. value
+	log:debug('executing cmd: ', cmd)
+	os.execute(cmd .. ' > /dev/null')
 end
 
 -- returns open file descriptor, so you can parse output
 function AlsaCapability:get()
-    cmd = 'amixer -c ' .. self:getCard() .. ' get ' .. self:getControlIdentifier() .. ' ' .. (self:getStreamModifiers() and self:getStreamModifiers() .. ' ' or '')
-    log:debug('executing cmd: ', cmd)
-    local file = io.popen(cmd)
+	local cmd = 'amixer -D ' .. self:getCard() .. ' get ' .. self:getControlIdentifier() .. ' ' .. (self:getStreamModifiers() and self:getStreamModifiers() .. ' ' or '')
+	log:debug('executing cmd: ', cmd)
+	local file = io.popen(cmd)
 	
 	if file == nil then
 		log:error("the command," .. cmd .. ", failed")
 		return nil
 	end
 
-    return file
-    
+	return file
 end
 
 
 function AlsaCapability:setPlayBlack()
-    self.playblack = true
-    self.capture = false
+	self.playblack = true
+	self.capture = false
 end
 
 function AlsaCapability:setCapture()
-    self.playblack = false
-    self.capture = true
+	self.playblack = false
+	self.capture = true
 end
 
 function AlsaCapability:getDescription()
-    return self.desc
+	return self.desc
 end
 
 function AlsaCapability:getState()
-    assert(true == false, 'override this method')
+	assert(true == false, 'override this method')
 end
 
 
 local PVolumeCapability = oo.class({},AlsaCapability)
 
 function PVolumeCapability:__init(args)
-    args.desc = applet:string("VOLUME_DESCRIPTION")
-    super = oo.superclass(PVolumeCapability):__init(args)
-    local obj = oo.rawnew(self,super)
-    return obj
+	args.desc = applet:string("VOLUME_DESCRIPTION")
+	super = oo.superclass(PVolumeCapability):__init(args)
+	local obj = oo.rawnew(self,super)
+	return obj
 end
 
 function PVolumeCapability:setVolumePercent(vol)
-    assert(type(vol) == 'number', 'volume must be a number')
-    assert(vol <= 100 and vol >= 0, 'volume must be between 0 and 100')
-    self:set(vol .. '%')
+	assert(type(vol) == 'number', 'volume must be a number')
+	assert(vol <= 100 and vol >= 0, 'volume must be between 0 and 100')
+	self:set(vol .. '%')
 end
 
 function PVolumeCapability:getState()
-    file = self:get()
+    local file = self:get()
     local volume = 'error'
     local upper = nil
 
@@ -174,7 +171,6 @@ function PVolumeCapability:getState()
     end
    
     return volume  
-
 end
 
 local PSwitchCapability = oo.class({},AlsaCapability)
@@ -207,7 +203,6 @@ function PSwitchCapability:getState()
     end
 
     return applet:string('MUTED')     
-
 end
 
 function PSwitchCapability:setMuted(flag)
@@ -217,7 +212,6 @@ function PSwitchCapability:setMuted(flag)
     end
 
     self:set('unmute') 
-
 end
 
 function PSwitchCapability:getMuted()
@@ -232,7 +226,6 @@ function PSwitchCapability:getMuted()
     end
 
     return false
-
 end
 
 function PSwitchCapability:toggle()
@@ -243,7 +236,6 @@ function PSwitchCapability:toggle()
     end
 
     return self:setMuted(true)
-
 end
 
 
@@ -252,14 +244,12 @@ local PVolumeHandler = oo.class({},CapabilityHandler)
 local PSwitchHandler = oo.class({},CapabilityHandler)
 
 function CapabilityHandler:__init(args)
-  
-  local obj = oo.rawnew(self)
-  obj.card = args.card
-  obj.control = args.control
-  obj.capability = args.capability
-  obj.callbacks = {}
-  return obj
-
+	local obj = oo.rawnew(self)
+	obj.card = args.card
+	obj.control = args.control
+	obj.capability = args.capability
+	obj.callbacks = {}
+	return obj
 end
 
 function CapabilityHandler:addCallback(callback)
@@ -343,71 +333,65 @@ end
 
 
 function PSwitchHandler:__init(args)
-    super = oo.superclass(PSwitchHandler):__init(args)
-    local obj = oo.rawnew(self,super)
-    obj.capability = PSwitchCapability({capability=args.capability,card = args.card, control = args.control})
-    return obj
+	super = oo.superclass(PSwitchHandler):__init(args)
+	local obj = oo.rawnew(self,super)
+	obj.capability = PSwitchCapability({capability=args.capability,card = args.card, control = args.control})
+	return obj
 end
 
 
 function PSwitchHandler:processEvent()
-    self.capability:toggle()
-    self:_notifyAll()
+	self.capability:toggle()
+	self:_notifyAll()
 end
 
 function PSwitchHandler:getDescription()
-    muted = self.capability:getMuted()
-    if muted then 
-        return applet:string('UNMUTE')
-    end
-    return applet:string('MUTE')
+	return self.capability:getMuted() and applet:string('UNMUTE') or applet:string('MUTE')
 end
 
 
 
 function updateStartMenu(self,menu)
-
-    menu:setHeaderWidget(Textarea("help_text", self:string("HELP_START")))
+	menu:setHeaderWidget(Textarea("help_text", self:string("HELP_START")))
 
 	local cards = self:_parseCards()
-    self.current_card = self.current_card or 1
-    len = #cards
+	self.current_card = self.current_card or 1
 
-    local incrementCard = function()
-        if self.current_card < len then
-            self.current_card = self.current_card + 1
-        else
-            self.current_card = 1    
-        end
-        log:debug('current card :', self.current_card)
-    end
-	
-    local items = {}
+	local incrementCard = function()
+		if self.current_card < #cards then
+			self.current_card = self.current_card + 1
+		else
+			self.current_card = 1
+		end
+		log:debug('current card :', self.current_card, ' ', cards[self.current_card].id)
+	end
 
-    items[#items+1] = {
+	local items = {}
+
+	items[#items+1] = {
 	    text = cards[self.current_card].desc,
 	    sound = "WINDOWSHOW",
 	    callback = function(event, menuItem)
                         incrementCard()
                         self:updateStartMenu(menu) 
-			       end,
-    }
+	    end,
+	}
 
-    for control_no, control in ipairs(cards[self.current_card].controls) do
-        -- we only deal with playback devices for now
-        if control.playback_channels then
-            items[#items+1] = {
-	            text = control.name,
-	            sound = "WINDOWSHOW",
-	            callback = function(event, menuItem)
-                                self:controlHandler(self.current_card, control) 
-			               end,
-            }
-        end
-    end
+	for control_no, control in ipairs(cards[self.current_card].controls) do
+		-- we only deal with playback devices for now
+		if control.playback_channels then
+			items[#items+1] = {
+				text = control.name,
+				sound = "WINDOWSHOW",
+				callback = function(event, menuItem)
+					self:controlHandler(cards[self.current_card].id, control)
+				end,
+			}
+		end
+	end
 
-
-    menu:setItems(items, #items)   
+	menu:setItems(items, #items)
+	menu:setSelectedIndex(1,true,true)
 end
 
 --function test_caps(self,card,control)
@@ -423,7 +407,6 @@ end
 
 
 function updateControlHandlerMenu(self,menu,card,control)
-
     local callback = function(handler,event) 
                         self:updateControlHandlerMenu(menu,card,control)   
                      end
@@ -453,22 +436,17 @@ function updateControlHandlerMenu(self,menu,card,control)
 
     end
     
-
     menu:setItems(items, #items) 
-
-
 end
 
 function controlHandler(self, card, control)
-    log:debug('card', card, '\t', 'control', control.name)
+	log:debug('card ', card, '\t', 'control ', control.name)
 
 	local window = Window("text_list", self:string("CAPABILITIES"))
 	local menu = SimpleMenu("menu")
 	window:addWidget(menu)
     
-    self:updateControlHandlerMenu(menu,card,control)
-
-
+	self:updateControlHandlerMenu(menu,card,control)
 
 	self:tieAndShowWindow(window)
 	return window
@@ -478,12 +456,12 @@ end
 
 
 function startMenu(self, menuItem)
-    applet = self
+	applet = self
 	local window = Window("text_list", self:string("SELECT_CONTROL"))
 	local menu = SimpleMenu("menu")
 	window:addWidget(menu)
 
-    self:updateStartMenu(menu)
+	self:updateStartMenu(menu)
 
 	self:tieAndShowWindow(window)
 	return window
@@ -534,17 +512,14 @@ function _parseAmixerControls(self, device)
 		return t
 	end
 
-    t = self:_parseAmixerOutput(file)
+	t = self:_parseAmixerOutput(file)
 
-    return t
-	
-
+	return t
 end
 
 
 function _parseAmixerOutput(self, file)
-
-    local t ={}
+	local t ={}
 
 	-- parsing helper functions
 	local last
@@ -554,21 +529,21 @@ function _parseAmixerOutput(self, file)
 			return
 		end
 		local r =  pack(string.match(tmp, regexp))
-        len = #r
+		local len = #r
 		if opt and len == 0 then
 			last = tmp
 		else
 			last = nil
 		end
-        -- FIXME: why does return not return the multiple returns from unpack?
-        -- for multiple returns unpack rtn
-        if len == 0 then 
-            return nil
-        elseif len == 1 then
-            return unpack(r)
-        else
-            return r
-        end
+		-- FIXME: why does return not return the multiple returns from unpack?
+		-- for multiple returns unpack rtn
+		if len == 0 then
+			return nil
+		elseif len == 1 then
+			return unpack(r)
+		else
+			return r
+		end
 	end
 
 	local skip = function(number) 
@@ -590,96 +565,99 @@ function _parseAmixerOutput(self, file)
 
 	local controls = {}
 
-    local addControlInfo = function (key, val)
-        if not val then
-            return
-        end
-        controls[#controls][key] = val
-    end
+	local addControlInfo = function (key, val)
+		log:debug("addControlInfo ",key," ",val)
+		if not val then
+			return
+		end
+		controls[#controls][key] = val
+	end
 
-    local extractVolumeInfo = function(channel)
-        local pattern = ':.-(%d+).*%[(on?f?f?)%].*'
-        pattern = channel .. pattern
-        local volume_info = parse(pattern,true) or false and skip(1)
-        local volume, state
-        if volume_info then
-            volume, state = unpack(volume_info)
-        else
-            pattern = channel .. ':.*%[(on?f?f?)%].*'
-            state = parse(pattern,true) or false and skip(1)
-            pattern = channel .. ':.-(%d+).*'
-            volume = parse(pattern,true) or false and skip(1)
-        end
-        return state, volume    
-    end
+	local extractVolumeInfo = function(channel)
+		local pattern = ':.-(%d+).*%[(on?f?f?)%].*'
+		pattern = channel .. pattern
+		local volume_info = parse(pattern,true) or false and skip(1)
+		local volume, state
+		if volume_info then
+			volume, state = unpack(volume_info)
+		else
+			pattern = channel .. ':.*%[(on?f?f?)%].*'
+			state = parse(pattern,true) or false and skip(1)
+			pattern = channel .. ':.-(%d+).*'
+			volume = parse(pattern,true) or false and skip(1)
+		end
+		return state, volume
+	end
 
 	while not eof() do
-        local info = parse('Simple mixer control%s+\'(.*)\',(%d+)')
-        local name, index
-        if info then
-            name, index = unpack(info)
-        end
-        local caps = parse('Capabilities:%s+(.*)',true) or false and skip(1)
-        if caps then
-            caps = caps:split(' ')
-        end
-        local items = parse('Items:%s+(.*)', true) or false and skip(1)
-        if items then
-            items = items:gsub('\'','')
-            items = items:split(' ')
-        end
-        local item0 = parse('Item0:%s+(.*)', true) or false and skip(1)
-        if item0 then
-            item0 = item0:gsub('\'','')
-            item0 = item0:gsub(' ','')
-        end
+		local info = parse('Simple mixer control%s+\'(.*)\',(%d+)')
+		local name, index
+		if info then
+			name, index = unpack(info)
+		end
+		local caps = parse('Capabilities:%s+(.*)',true) or false and skip(1)
+		if caps then
+			caps = caps:split(' ')
+		end
+		local items = parse('Items:%s+(.*)', true) or false and skip(1)
+		if items then
+			items = items:gsub('\'','')
+			items = items:split(' ')
+		end
+		local item0 = parse('Item0:%s+(.*)', true) or false and skip(1)
+		if item0 then
+			item0 = item0:gsub('\'','')
+			item0 = item0:gsub(' ','')
+		end
         
-        local playback_channels = parse('Playback channels:%s+(.*)', true) or false and skip(1)
-        local capture_channels = parse('Capture channels:%s+(.*)', true) or false and skip(1)
-        local limit_info = parse('Limits:.-(%d+).-(%d+)',true) or false and skip(1)
-        local lower_limit, upper_limit
-        if limit_info then
-            lower_limit, upper_limit = unpack(limit_info)
-            log:debug('upper / lower volume limit: ' , lower_limit, '/' , upper_limit)    
-        end
-        local mono_state, mono_volume = extractVolumeInfo('Mono')
-        local front_left_state, front_left_volume = extractVolumeInfo('Front Left')
-        local front_right_state, front_right_volume = extractVolumeInfo('Front Right')
+		local playback_channels = parse('Playback channels:%s+(.*)', true) or false and skip(1)
+		local capture_channels = parse('Capture channels:%s+(.*)', true) or false and skip(1)
+		local limit_info = parse('Limits:.-(%d+).-(%d+)',true) or false and skip(1)
+		local lower_limit, upper_limit
 
-        state = mono_state or front_left_state or front_right_state
+		if limit_info then
+			lower_limit, upper_limit = unpack(limit_info)
+			log:debug('upper / lower volume limit: ' , lower_limit, '/' , upper_limit)
+		end
+		local mono_state, mono_volume = extractVolumeInfo('Mono')
+		local front_left_state, front_left_volume = extractVolumeInfo('Front Left')
+		local front_right_state, front_right_volume = extractVolumeInfo('Front Right')
 
-        if state then
-            log:debug('state: ', state)
-        end
+	        state = mono_state or front_left_state or front_right_state
 
-        
+		if state then
+			log:debug('state: ', state)
+		end
 
-        if name then
-		    controls[#controls+1] = {name = name, }
-        end
-        -- only adds if non nil
-        addControlInfo('index',index)
-        addControlInfo('caps',caps)
-        addControlInfo('playback_channels',playback_channels)
-        addControlInfo('capture_channels',capture_channels)
-        addControlInfo('state',state)
-        addControlInfo('mono_volume',mono_volume)
-        addControlInfo('volume_lower_limit',lower_limit)
-        addControlInfo('volume_upper_limit', upper_limit)
-        addControlInfo('front_left_volume',front_left_volume)
-        addControlInfo('front_right_volume',front_right_volume)
-        addControlInfo('items',items)
-        addControlInfo('item0',item0)
+		if name then
+			log:debug('name: ', name)
+			controls[#controls+1] = {name = name, }
+		end
+
+		-- only adds if non nil
+		addControlInfo('index',index)
+		addControlInfo('caps',caps)
+		addControlInfo('playback_channels',playback_channels)
+		addControlInfo('capture_channels',capture_channels)
+		addControlInfo('state',state)
+		addControlInfo('mono_volume',mono_volume)
+		addControlInfo('volume_lower_limit',lower_limit)
+		addControlInfo('volume_upper_limit', upper_limit)
+		addControlInfo('front_left_volume',front_left_volume)
+		addControlInfo('front_right_volume',front_right_volume)
+		addControlInfo('items',items)
+		addControlInfo('item0',item0)
 
 	end
 	
 	t.controls = controls
-
 	file:close()
 
 	return t
-
 end
+
+
+local service = {}
 
 
 function _parseCards(self)
@@ -704,15 +682,24 @@ function _parseCards(self)
 	cards:close()
 
 	-- FIXME iterate over string split and add
-	if settings['custom'] then
+	local settings = self:getSettings()
+	if settings['custom'] and settings['custom'] ~= '' then
+		log:info("Custom Mixer ",settings['custom'])
 		t[#t+1] = self:_parseAmixerControls(settings['custom'])
 		t[#t]['id'] = settings['custom']
-		t[#t]['desc'] = 'custom'
+		t[#t]['desc'] = tostring(self:string('SETTING_CUSTOM'))..' '..settings['custom']
 	end
 
+	for i,m in ipairs(service) do
+		t[#t+1] = m
+	end
 	return t
 end
 
 
-
+function addMixer(self,name,desc)
+	service[#service+1] = self:_parseAmixerControls(name)
+	service[#service]['id'] = name
+	service[#service]['desc'] = desc
+end
 
